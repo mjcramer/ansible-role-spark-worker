@@ -1,0 +1,16 @@
+# roles/spark-worker/tasks/configure.yml
+---
+- name: configure | create exec script
+  template:
+    src: wrapper.sh.j2
+    dest: "{{ base_daemon_dir }}/spark-worker-service.sh"
+    mode: 0755
+
+- name: configure | create systemd configuration
+  template:
+    src: systemd.service.j2
+    dest: "{{ systemd_service_dir }}/spark-worker.service"
+    mode: 0644
+  notify:
+    - reload systemd
+

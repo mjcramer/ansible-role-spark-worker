@@ -1,0 +1,42 @@
+#!/bin/bash
+
+export SPARK_CONF={{ spark.conf_dir }}
+
+{% if zookeeper_hosts is defined -%}
+    {% set hosts = zookeeper_hosts -%}
+{% elif zookeeper_hostgroup is defined and groups[zookeeper_hostgroup] is defined %}
+    {% set hosts = groups[zookeeper_hostgroup] -%}
+{% endif -%}
+
+su {{ spark_user }} -- {{ spark.home_dir }}/bin/spark-class org.apache.spark.deploy.worker.Worker \
+{% if hosts is defined -%}
+    mesos://zk://
+    {%- for host in hosts -%}
+        {% if hostvars[host]['cluster_interface'] is defined -%}
+            {% set key = 'ansible_' + hostvars[host]['cluster_interface'] -%}
+            {% set host_ipv4 = hostvars[host][key]['ipv4'] -%}
+        {% else -%}
+            {% set host_ipv4 = hostvars[host]['ansible_default_ipv4'] -%}
+        {% endif -%}
+        {{ host_ipv4['address'] | default(host) }}:{{ zookeeper_port }}
+        {% if not loop.last -%}
+            ,
+        {% endif -%}
+    {% endfor -%}
+{% else -%}
+    {{ spark_master_connect }}
+{%- endif -%}
+{%- if hostvars[inventory_hostname]['cluster_interface'] is defined -%}
+    {%- set key = 'ansible_' + hostvars[inventory_hostname]['cluster_interface'] -%}
+    {%- set host_ipv4 = hostvars[inventory_hostname][key]['ipv4'] -%}
+{%- else -%}
+    {%- set host_ipv4 = hostvars[inventory_hostname]['ansible_default_ipv4'] -%}
+{%- endif %}
+    --host {{ host_ipv4['address'] | default(inventory_hostname) }} \
+    --port {{ spark_worker_port }} \
+    --webui-port {{ spark_worker_webui_port }} \
+{%- if data_devices is defined %}
+    --work-dir {{ data_devices | map(attribute='name') | map('regex_replace', '(.*)', '\\1/spark') }}
+{% else %}
+    --work-dir {{ spark_worker.lib_dir }}
+{% endif %}

@@ -1,0 +1,5 @@
+# roles/spark-worker/defaults/main.yml
+---
+spark_worker_instance_number: 1
+spark_worker_port: 6066
+spark_worker_webui_port: 5055

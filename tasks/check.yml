@@ -1,0 +1,6 @@
+# roles/spark-worker/tasks/check.yml
+---
+#- name: check | port
+#  wait_for:
+#    port: "{{ spark_worker_port }}"
+#    delay: 10

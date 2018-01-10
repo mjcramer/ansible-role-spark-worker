@@ -1,0 +1,9 @@
+# roles/spark-worker/tasks/initialize.yml
+---
+- meta: flush_handlers
+
+- name: initialize | start spark worker
+  service:
+    name: spark-worker
+    enabled: yes
+    state: started

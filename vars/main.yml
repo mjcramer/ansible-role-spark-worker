@@ -1,0 +1,7 @@
+# roles/spark-worker/vars/main.yml
+---
+
+spark_master_connect: spark://{{ spark_master_hosts | map('regex_replace', '(.*)', '\1:%d' % spark_master_port) | join(',') }}
+mesos_master_connect: mesos://zk://{{ master_hosts | map('regex_replace', '(.*)', '\1:%d' % spark_master_port) | join(',') }}
+spark_worker:
+  lib_dir: "{{ spark.lib_dir }}/worker"

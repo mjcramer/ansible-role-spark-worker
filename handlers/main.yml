@@ -1,0 +1,9 @@
+# roles/spark-worker/handlers/main.yml
+---
+- include: handlers/system.yml
+  static: yes
+
+- name: restart spark worker
+  service: 
+    name: spark-worker
+    state: restarted

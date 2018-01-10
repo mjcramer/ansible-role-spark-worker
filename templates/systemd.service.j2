@@ -1,0 +1,42 @@
+###############################################################################
+# Spark worker systemd service configuration
+#
+# {{ ansible_managed }}
+#
+###############################################################################
+
+[Unit]
+Description=Apache Spark Work
+Documentation=http://spark.apache.org/
+Requires=network.target
+After=network.target
+ConditionPathExists={{ spark.conf_dir }}
+ConditionPathExists={{ spark.lib_dir }}
+ConditionPathExists={{ spark.log_dir }}
+
+[Service]
+Type=forking
+User={{ spark_user }}
+Group={{ spark_group }}
+SyslogIdentifier=spark
+LimitNOFILE={{ spark_nofile }}
+WorkingDirectory={{ spark.home_dir }}
+RuntimeDirectory=spark
+RuntimeDirectoryMode=0755
+Environment=SPARK_CONF_DIR={{ spark.conf_dir }}
+Environment=SPARK_CONF_DIR={{ spark.conf_dir }}
+{% if hostvars[inventory_hostname]['cluster_interface'] is defined %}
+    {%- set key = 'ansible_' + hostvars[inventory_hostname]['cluster_interface'] %}
+    {%- set host_ipv4 = hostvars[inventory_hostname][key]['ipv4'] %}
+{% else %}
+    {%- set host_ipv4 = hostvars[inventory_hostname]['ansible_default_ipv4'] %}
+{% endif %}
+ExecStart={{ spark.home_dir }}/sbin/spark-daemon.sh --config {{ spark.conf_dir }} start org.apache.spark.deploy.worker.Worker {{ spark_worker_instance_number }} {{ spark_master_connect }} --host {{ host_ipv4['address'] | default(inventory_hostname) }} --port {{ spark_worker_port }} --webui-port {{ spark_worker_webui_port }} --work-dir {{ spark_worker.lib_dir }}
+ExecStop={{ spark.home_dir }}/sbin/spark-daemon.sh --config {{ spark.conf_dir }} stop org.apache.spark.deploy.worker.Worker {{ spark_worker_instance_number }}
+PIDFile={{ spark.run_dir }}/spark-{{ spark_user }}-org.apache.spark.deploy.worker.Worker-{{ spark_worker_instance_number }}.pid
+Restart=on-failure
+TimeoutStartSec=60s
+TimeoutStopSec=30s
+
+[Install]
+WantedBy=multi-user.target
